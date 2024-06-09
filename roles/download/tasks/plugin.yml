@@ -1,0 +1,53 @@
+---
+# Plugin-archive download-links are included in file extensions.xml, located at:
+# https://github.com/LMS-Community/lms-plugin-repository/raw/master/extensions.xml
+- name: LMS DOWNLOAD PLUGIN | Obtain list of plugins and their details, including download-link.
+  ansible.builtin.get_url:
+    url: "{{ lms_extensions_url }}"
+    dest: "/tmp/extensions.xml"
+    mode: u=rw,g=r,o=r
+  delegate_to: localhost
+  changed_when: false
+  become: false
+
+# Obtain Plugin-details, including download-link for archive download through plugin-name or auxiliarily plugin-title.
+# Documentation for XPath: https://www.w3schools.com/xml/xpath_syntax.asp
+# E.g. filtering for tag title: xpath: "/extensions/plugins/plugin[title='AirPlay bridge']"
+# or filtering for attribute: xpath: "/extensions/plugins/plugin[@name='RaopBridge']"
+- name: LMS DOWNLOAD PLUGIN | Read the plugin-information based on given plugin-name or if given plugin-title.
+  community.general.xml:
+    path: "/tmp/extensions.xml"
+    xpath: "/extensions/plugins/plugin[{{ xmatch }}]"
+    content: attribute
+  delegate_to: localhost
+  become: false
+  register: xmlresponse
+  loop: "{{ lms_plugins }}"
+  loop_control:
+    label: "Obtaining plugin-details for plugin with {{ xmatch }}."
+  vars:
+    xmatch: "{{ '@name=\"' ~ item.name ~ '\"' if item.name is defined else 'title=\"' ~ item.title ~ '\"' }}"
+  when: (item.title is defined) or (item.name is defined)
+
+# Download the plugin-archive-file, but only if not already existent.
+# The vars-section is a work-around, because if ansible receives "localhost" through a variable to delegate_to,
+# then it tries to ssh into the localhost.
+# In case of download to localhost, lookup('env','USER') retrieves the username running the playbook.
+# The group cannot be easily obtained, nor does setting to null via templated variable work, but
+# not providing group will fill in the users default-group.
+# This requires that lms_owner must have its default-group set to lms_group
+# Source: https://stackoverflow.com/questions/61295544/ansible-local-action-on-host-without-local-ssh-daemon
+- name: LMS DOWNLOAD PLUGIN | Download LMS Logitech Media Server Plugin zip-files to control-host.
+  ansible.builtin.get_url:
+    url: "{{ item.matches[0].plugin.url }}"
+    dest: "{{ lms_download_dir }}/{{ item.matches[0].plugin.url | basename }}"
+    owner: "{{ lookup('env', 'USER') if inventory_hostname is match('localhost') else lms_owner }}"
+    mode: u=rw,g=rw,o=r
+  delegate_to: "{{ inventory_hostname }}"
+  become: false
+  when: lookup('ansible.builtin.fileglob', lms_download_dir ~ '/' ~ (item.matches[0].plugin.url | basename)) | length == 0
+  loop: "{{ xmlresponse.results }}"
+  loop_control:
+    label: "Downloading plugin {{ item.matches[0].plugin.name }} from {{ item.matches[0].plugin.url }}."
+  vars:
+    ansible_connection: "{{ 'local' if inventory_hostname is match('localhost') else 'ssh' }}"

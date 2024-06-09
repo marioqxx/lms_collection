@@ -1,0 +1,5 @@
+---
+# vars file for ansible-role-lms
+#
+# Helper setting for json-interface.
+lms_fqdn: "{{ ansible_hostname }}.{{ realm | default('') }}"

@@ -1,0 +1,30 @@
+---
+# The directory to which the files shall be downloaded.
+lms_download_dir: ""
+
+# Default to always download all.
+lms_download_lms: true
+lms_download_plugins: true
+
+# A list of plugins. Each list member is a dictionary. It must contain a "name" or "title"-tag.
+# optionally may include a file-tag and addfile-tag.
+lms_plugins: []
+
+# WEB-location of plugin repository
+lms_extensions_url: "https://github.com/LMS-Community/lms-plugin-repository/raw/master/extensions.xml"
+
+# WEB-location of logitechmediaserver .deb package. Needs the architecture to select the correct file.
+# If left empty, it will query the architecture from the remote_host.
+# Can be one of "all", "amd64", "arm" and "i386".
+lms_server_arch: ""
+
+# Can be any of "latest", "nigtly" or "lyrion"
+lms_server_version: "nightly"
+
+# WEB-location of .deb package.
+lms_server_repo_url: "https://downloads.lyrion.org/"
+
+# The User and group for the LMS-server
+# The user 'lms_owner' must exist and have as default-group 'lms_group' on the remote-host.
+lms_owner: squeezeboxserver
+lms_group: squeezeboxserver

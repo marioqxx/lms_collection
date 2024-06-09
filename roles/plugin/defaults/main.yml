@@ -1,0 +1,19 @@
+---
+# A list of plugins. Each list member is a dictionary. It must contain a "name" or "title"-tag.
+# optionally may include a file-tag and addfile-tag.
+lms_plugins: []
+
+# The directory where LMS stores the settings and plugins. NO! trailing slash "/".
+lms_settings_dir: "/var/lib/squeezeboxserver"
+
+# Ports
+lms_port: 9000
+lms_rpcport: 9090
+lms_service_name: logitechmediaserver
+
+# WEB-location of plugin repository
+lms_extensions_url: "https://github.com/LMS-Community/lms-plugin-repository/raw/master/extensions.xml"
+
+# The User and group for the LMS-server
+lms_owner: squeezeboxserver
+lms_group: squeezeboxserver

@@ -1,0 +1,54 @@
+---
+- name: LMS DOWNLOAD LMS | Obtain the architecture from the remote-host.
+  ansible.builtin.set_fact:
+    lms_server_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm' if ansible_architecture == 'aarch64' else ansible_architecture }}"
+  when: lms_server_arch | length == 0
+
+- name: LMS DOWNLOAD LMS | Check selected architecture setting.
+  ansible.builtin.assert:
+    that:
+      - lms_server_arch in lms_architectures
+    fail_msg: "'lms_server_arch' must be one of: {{ lms_architectures }}"
+    success_msg: "download for architecture '{{ lms_server_arch }}'"
+  delegate_to: localhost
+  become: false
+
+- name: LMS DOWNLOAD LMS | Fetch LMS Logitech Media Server .deb package name from online-repository.
+  ansible.builtin.get_url:
+    url: "{{ lms_server_repo_url }}"
+    dest: "/tmp/packages.html"
+    mode: u=rw,g=r,o=r
+  changed_when: false
+  delegate_to: localhost
+  become: false
+
+# Download the Logitech Media Server .deb package, but only if not already existent.
+- name: LMS DOWNLOAD LMS | The following package was found for download.
+  ansible.builtin.debug:
+    msg: "{{ 'Package-URL:' ~ deb[ ind | int ] }}"
+  delegate_to: localhost
+  become: false
+  vars:
+    repo: "{{  lookup('ansible.builtin.file', '/tmp/packages.html') }}"
+    pattern: "{{ '.*<a.href=\"(https.*' ~ lms_server_arch ~ '.deb).*\">' }}"
+    deb: "{{ (repo | regex_findall(pattern, '\\1', ignorecase=true)) }}"
+    ind: "{{ lms_version_index | ansible.utils.index_of('eq', lms_server_version | lower ) }}"
+
+# The vars-section is a work-around, because if ansible receives "localhost" through a variable to delegate_to,
+# then it tries to ssh into the localhost. To avoid this, ansible_connection must be specified.
+# Source: https://stackoverflow.com/questions/61295544/ansible-local-action-on-host-without-local-ssh-daemon
+- name: LMS DOWNLOAD LMS | Download LMS Logitech Media Server .deb package.
+  ansible.builtin.get_url:
+    url: "{{ deb[ ind | int ] }}"
+    dest: "{{ lms_download_dir }}/"
+    owner: "{{ if inventory_hostname is match('localhost') lookup('env', 'USER) else lms_owner }}"
+    mode: u=rw,g=r,o=r
+  delegate_to: "{{ inventory_hostname }}"
+  become: false
+  when: lookup('ansible.builtin.fileglob', lms_download_dir ~ '/' ~ deb[ ind | int ] | urlsplit('path') | basename) | length == 0
+  vars:
+    repo: "{{  lookup('ansible.builtin.file', '/tmp/packages.html') }}"
+    pattern: "{{ '.*<a.href=\"(https.*' ~ lms_server_arch ~ '.deb).*\">' }}"
+    deb: "{{ (repo | regex_findall(pattern, '\\1', ignorecase=true)) }}"
+    ind: "{{ lms_version_index | ansible.utils.index_of('eq', lms_server_version | lower ) }}"
+    ansible_connection: "{{ 'local' if inventory_hostname is match('localhost') else 'ssh' }}"

@@ -1,0 +1,43 @@
+---
+# The filename of the local downloaded file. If provided, the file is copied, otherwise it is downloaded.
+lms_server: ""
+
+# A list of plugins. Each list member is a dictionary. It must contain a "name" or "title"-tag.
+# optionally may include a file-tag and addfile-tag.
+
+lms_plugins: []
+
+# A list of settings. Each list member is a list comprising (at least) three strings.
+# The first list-parameter is the command, e.g. "pref" for reading and writing settings.
+# The second list-parameter is the command option, e.g. "info" or "plugin.extensions:plugin"
+#     for the setting to be queried or set.
+# The thrid parameter is either "?" to query the value of the setting of if a value is provided
+# the value to be set. If the setting is a dictionary, then is has to be embraced with "{}".
+# If it is a list, then with "[]".
+lms_settings: []
+
+# The directory where LMS stores the settings and plugins. NO! trailing slash "/".
+lms_settings_dir: "/var/lib/squeezeboxserver"
+
+# Ports
+lms_port: 9000
+lms_rpcport: 9090
+lms_service_name: logitechmediaserver
+
+# WEB-location of plugin repository
+lms_extensions_url: "https://github.com/LMS-Community/lms-plugin-repository/raw/master/extensions.xml"
+
+# WEB-location of logitechmediaserver .deb package. Needs the architecture to select the correct file.
+# If left empty, it will query the architecture from the remote_host.
+# Can be one of "all", "amd64", "arm" and "i386".
+lms_server_arch: "amd64"
+
+# Can be any of "latest", "nigtly" or "lyrion"
+lms_server_version: "nightly"
+
+# WEB-location of .deb package.
+lms_server_repo_url: "https://downloads.lyrion.org/"
+
+# The User and group for the LMS-server
+lms_owner: squeezeboxserver
+lms_group: squeezeboxserver

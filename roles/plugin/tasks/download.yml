@@ -1,0 +1,64 @@
+---
+# This part is basically a copy of the download-role within this collection. Due to strict
+# role-separation I have not found a useful way to re-use the download-role. Drawback is clearly code-duplication.
+- name: LMS PLUGIN DOWNLOAD | Obtain list of plugins and their details, including download-link.
+  ansible.builtin.get_url:
+    url: "{{ lms_extensions_url }}"
+    dest: "/tmp/extensions.xml"
+    mode: u=rw,g=r,o=r
+  delegate_to: localhost
+  become: false
+
+- name: LMS PLUGIN DOWNLOAD | Read the plugin-information based on given plugin-name or if given plugin-title.
+  community.general.xml:
+    path: "/tmp/extensions.xml"
+    xpath: "/extensions/plugins/plugin[{{ xmatch }}]"
+    content: attribute
+  delegate_to: localhost
+  become: false
+  register: xmlresponse
+  loop: "{{ lms_plugins }}"
+  loop_control:
+    label: "Obtaining plugin-details for plugin with {{ xmatch }}."
+  vars:
+    xmatch: "{{ '@name=\"' ~ item.name ~ '\"' if item.name is defined else 'title=\"' ~ item.title ~ '\"' }}"
+  when: (item.title is defined) or (item.name is defined)
+
+# Download the plugin-archive-file if no "file"-tag is configured. If a file-tag is configured, then
+# copy the file from the source-directory to the destination and rename to plugin-name.
+- name: LMS PLUGIN DOWNLOAD | Download the LMS server plugin-zip files to the destination directory on the remote-host and rename.
+  ansible.builtin.get_url:
+    url: "{{ item.matches[0].plugin.url }}"
+    dest: "{{ lms_settings_dir }}/cache/DownloadedPlugins/{{ item.matches[0].plugin.name }}.zip"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=rw,o=r
+  loop: "{{ xmlresponse.results }}"
+  loop_control:
+    label: "Downloading plugin {{ item.matches[0].plugin.name }} from {{ item.matches[0].plugin.url }}"
+  when: item.item.file is not defined
+
+- name: LMS PLUGIN DOWNOAD | Copy the configured LMS server plugin-zip files to the destination directory on the remote-host and rename.
+  ansible.builtin.copy:
+    src: "{{ item.item.file }}"
+    dest: "{{ lms_settings_dir }}/cache/DownloadedPlugins/{{ item.matches[0].plugin.name }}.zip"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=rw,o=r
+    remote_src: "{{ inventory_hostname is match('localhost') }}"
+  loop: "{{ xmlresponse.results }}"
+  loop_control:
+    label: "Copying plugin with {{ 'title ' ~ item.item.title if item.item.title is defined else 'name ' ~ item.item.name }} to remote host."
+  when: item.item.file is defined and ((item.item.title is defined) or (item.item.name is defined))
+
+- name: LMS PLUGINS DOWNLOAD | Copy additional files for plugins.
+  ansible.builtin.copy:
+    src: "{{ item.addfile }}"
+    dest: "{{ lms_settings_dir }}/prefs/{{ item.addfile | basename }}"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=rw,o=r
+  loop: "{{ lms_plugins }}"
+  loop_control:
+    label: "Copying for plugin additional file {{ item.addfile | default('n/a') }} to remote host."
+  when: item.addfile is defined and ((item.title is defined) or (item.name is defined))

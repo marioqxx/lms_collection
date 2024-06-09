@@ -1,0 +1,22 @@
+---
+- name: LMS PLUGIN | Check parameters
+  ansible.builtin.assert:
+    that:
+      lms_plugins|length > 0
+    fail_msg: lms_plugins must contain at least one plugin.
+
+- name: LMS PLUGIN | Obtain LMS server plugin zip-files, rename and store in destinaiton directory on remote-host.
+  ansible.builtin.include_tasks: download.yml
+
+- name: LMS PLUGIN | Install the plugins.
+  ansible.builtin.include_tasks: install.yml
+
+# Restart the server to install the plugins and create plugin prefs-files.
+- name: LMS PLUGINS INSTALL | Restart the server to complete plugin-installation.
+  ansible.builtin.systemd:
+    name: "{{ lms_service_name }}"
+    state: restarted
+
+- name: LMS PLUGINS INSTALL | Wait server-restart completed and server ready.
+  ansible.builtin.wait_for:
+    port: "{{ lms_rpcport }}"

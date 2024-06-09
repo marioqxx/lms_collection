@@ -1,0 +1,9 @@
+---
+# The package name of the LMS server. May differ from the .deb package name.
+lms_server: "logitechmediaserver"
+
+# The directory where LMS stores the settings and plugins. NO! trailing slash "/".
+lms_settings_dir: "/var/lib/squeezeboxserver"
+
+# The directory where LMS stores the LOG-files. NO! trailing slahs "/"!
+lms_log_dir: "/var/log/squeezeboxserver"

@@ -1,0 +1,16 @@
+---
+- name: LMS CLEANUP | Remove LMS server .deb package.
+  ansible.builtin.apt:
+    deb: "{{ lms_server | basename }}"
+    state: absent
+    purge: true
+
+- name: LMS CLEANUP | Remove LMS server settings-directory.
+  ansible.builtin.file:
+    path: "{{ lms_settings_dir }}"
+    state: absent
+
+- name: LMS CLEANUP | Remove LMS server LOG-directory.
+  ansible.builtin.file:
+    path: "{{ lms_log_dir }}"
+    state: absent

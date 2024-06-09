@@ -1,0 +1,20 @@
+---
+- name: LMS DOWNLOAD | Check parameters (1/2).
+  ansible.builtin.assert:
+    that:
+      lms_server_version in lms_version_index
+    fail_msg: "{{ 'lms_server_version must be one of ' ~ lms_version_index }}"
+
+- name: LMS DOWNLOAD | Check parameters (2/2).
+  ansible.builtin.assert:
+    that:
+      lms_download_dir|length > 0
+    fail_msg: lms_download_dir must not be empty.
+
+- name: LMS DOWNLOAD | Download LMS Logitech Media Server .deb package.
+  ansible.builtin.include_tasks: lms.yml
+  when: lms_download_lms
+
+- name: LMS DOWNLOAD | Download the plugin packages.
+  ansible.builtin.include_tasks: plugin.yml
+  when: lms_download_plugins

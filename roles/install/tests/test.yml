@@ -1,0 +1,6 @@
+---
+- name: Default
+  hosts: localhost
+  remote_user: root
+  roles:
+    - install

@@ -1,0 +1,14 @@
+---
+# A list of settings. Each list member is a list comprising (at least) three strings.
+# The first list-parameter is the command, e.g. "pref" for reading and writing settings.
+# The second list-parameter is the command option, e.g. "info" or "plugin.extensions:plugin"
+#     for the setting to be queried or set.
+# The thrid parameter is either "?" to query the value of the setting of if a value is provided
+# the value to be set. If the setting is a dictionary, then is has to be embraced with "{}".
+# If it is a list, then with "[]".
+lms_settings: []
+
+# Ports
+lms_port: 9000
+lms_rpcport: 9090
+lms_service_name: logitechmediaserver

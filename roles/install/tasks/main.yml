@@ -1,0 +1,53 @@
+---
+- name: LMS INSTALL | Check parameters
+  ansible.builtin.assert:
+    that:
+      lms_plugins|length > 0
+    fail_msg: lms_plugins must contain at least one plugin.
+
+- name: LMS INSTALL | Create squeezeboxserver-group.
+  ansible.builtin.group:
+    name: "{{ lms_owner }}"
+    state: present
+
+- name: LMS INSTALL | Create squeezeboxserver-user and add to primary group squeezeboxserver-group.
+  ansible.builtin.user:
+    name: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    state: present
+    system: true
+
+- name: LMS INSTALL | Copy the LMS server .deb package to /tmp on the remote-host.
+  ansible.builtin.copy:
+    src: "{{ lms_server }}"
+    dest: "/tmp/{{ lms_server | basename }}"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=r,o=r
+    remote_src: "{{ inventory_hostname is match('localhost') }}"
+  when: lms_server | length > 0
+
+- name: LMS INSTALL | Download the LMS server .deb package file to /tmp on the remote-host.
+  ansible.builtin.include_role:
+    name: mktest.lms.download
+  vars:
+    lms_download_lms: true
+    lms_download_plugins: false
+    lms_download_dir: "/tmp"
+  when: lms_server | length == 0
+
+- name: LMS INSTALL | Install LMS server .deb package.
+  ansible.builtin.apt:
+    deb: "/tmp/{{ lms_server | basename }}"
+
+- name: LMS INSTALL | Install configured plugins
+  ansible.builtin.include_role:
+    name: mktest.lms.plugin
+  when:
+    - lms_plugins|length > 0
+
+- name: LMS INSTALL | Configure LMS server
+  ansible.builtin.include_role:
+    name: mktest.lms.config
+  when:
+    - lms_settings|length > 0

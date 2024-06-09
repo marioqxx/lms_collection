@@ -1,0 +1,60 @@
+---
+# Manually modify state.prefs file. Could also be done through json-api call.
+# Source: https://forums.slimdevices.com/forum/user-forums/logitech-media-server/105068-manually-installing-plugin-zips
+#         https://github.com/Logitech/slimserver/discussions/902
+#         https://stackoverflow.com/questions/60571048/ansible-read-yaml-file-from-remote-location-into-variable
+#         https://ttl255.com/ansible-getting-date-and-timestamp/
+- name: "{{ 'LMS PLUGINS INSTALL | Read state-file from ' ~ lms_settings_dir ~ '/prefs/plugin/state.prefs.' }}"
+  ansible.builtin.slurp:
+    src: "{{ lms_settings_dir }}/prefs/plugin/state.prefs"
+  register: pref_file
+
+- name: LMS PLUGINS INSTALL | Convert state-file state.prefs to yaml.
+  ansible.builtin.set_fact:
+    prefs_yaml: '{{ pref_file.content | b64decode | from_yaml }}'
+
+- name: LMS PLUGINS INSTALL | Set state.prefs for plugin-installation upon next server start.
+  ansible.builtin.set_fact:
+    prefs_yaml: "{{ prefs_yaml | combine({ pluginname : 'needs-install', '_ts_' ~ pluginname : ansible_date_time.epoch | int }) }}"
+  loop: "{{ xmlresponse.results }}"
+  loop_control:
+    label: "Setting state.prefs for installation of plugin with {{ title }} name {{ pluginname }}"
+  vars:
+    pluginname: "{{ item.matches[0].plugin.name }}"
+    title: "{{ 'title \"' ~ item.item.title ~ '\" and ' if item.item.title is defined else '' }}"
+
+- name: LMS PLUGINS INSTALL | Write state-file state.prefs.
+  ansible.builtin.template:
+    src: "templates/yaml.j2"
+    dest: "{{ lms_settings_dir }}/prefs/plugin/state.prefs"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=rw,o=r
+
+# Manually modify extensions.prefs file. Could also be done through json-api call.
+- name: "{{ 'LMS PLUGINS INSTALL | Read extensions-file from ' ~ lms_settings_dir ~ '/plugin/extensions.prefs.' }}"
+  ansible.builtin.slurp:
+    src: "{{ lms_settings_dir }}/prefs/plugin/extensions.prefs"
+  register: pref_file
+
+- name: LMS PLUGINS INSTALL | Convert extensions-file extensions.prefs to yaml.
+  ansible.builtin.set_fact:
+    prefs_yaml: '{{ pref_file.content | b64decode | from_yaml }}'
+
+- name: LMS PLUGINS INSTALL | Set extensions.prefs for plugin-installation upon next server start.
+  ansible.builtin.set_fact:
+    prefs_yaml: "{{ prefs_yaml | combine({'plugin': {pluginname: 1}}, recursive=true) }}"
+  loop: "{{ xmlresponse.results }}"
+  loop_control:
+    label: "Setting extensions.prefs for installation of plugin with {{ title }}name {{ pluginname }}"
+  vars:
+    pluginname: "{{ item.matches[0].plugin.name }}"
+    title: "{{ 'title \"' ~ item.item.title ~ '\" and ' if item.item.title is defined else '' }}"
+
+- name: LMS PLUGINS INSTALL | Write extensions-file extensions.prefs.
+  ansible.builtin.template:
+    src: "templates/yaml.j2"
+    dest: "{{ lms_settings_dir }}/prefs/plugin/extensions.prefs"
+    owner: "{{ lms_owner }}"
+    group: "{{ lms_group }}"
+    mode: u=rw,g=rw,o=r

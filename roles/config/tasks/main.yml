@@ -1,0 +1,27 @@
+---
+# Configure the server and its config-files through jsonrpc-API.
+# Note: The config through telnet did not work, although manually via
+# telnet localhost 9000 from commandline worked. This may have something to
+# do because LMS does not implement a telnet protocol and/or the ansible
+# module isn't able to login without username/password and set to stream-mode.
+- name: LMS CONFIG | Through json-rpc API configure the server and plugins.
+  ansible.builtin.uri:
+    url: "http://{{ lms_fqdn }}:{{ lms_port }}/jsonrpc.js"
+    method: POST
+    body_format: json
+    body:
+      id: 1
+      method: "slim.request"
+      params: [" ", "{{ item }}"]
+  loop: "{{ lms_settings }}"
+
+# Restart the server.
+- name: LMS CONFIG | Restart the server to complete configuration.
+  ansible.builtin.systemd:
+    name: "{{ lms_service_name }}"
+    state: restarted
+
+# Wait server-restart completed and server ready. This is indicated when port ' ~ lms_rpcport ~ ' is available.' }}"
+- name: LMS CONFIG | Wait server-restart completed and server ready.
+  ansible.builtin.wait_for:
+    port: "{{ lms_rpcport }}"
